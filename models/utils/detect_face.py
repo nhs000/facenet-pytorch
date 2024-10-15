@@ -71,6 +71,8 @@ def detect_face(imgs, minsize, pnet, rnet, onet, threshold, factor, device):
         im_data = imresample(imgs, (int(h * scale + 1), int(w * scale + 1)))
         im_data = (im_data - 127.5) * 0.0078125
         reg, probs = pnet(im_data)
+        reg = reg.cpu()
+        probs = probs.cpu()
     
         boxes_scale, image_inds_scale = generateBoundingBox(reg, probs[:, 1], scale, threshold[0])
         boxes.append(boxes_scale)
@@ -119,10 +121,12 @@ def detect_face(imgs, minsize, pnet, rnet, onet, threshold, factor, device):
         out0 = out[0].permute(1, 0)
         out1 = out[1].permute(1, 0)
         score = out1[1, :]
+        score = out1[1, :].cpu()
         ipass = score > threshold[1]
         boxes = torch.cat((boxes[ipass, :4], score[ipass].unsqueeze(1)), dim=1)
         image_inds = image_inds[ipass]
         mv = out0[:, ipass].permute(1, 0)
+        mv = mv.cpu()
 
         # NMS within each image
         pick = batched_nms(boxes[:, :4], boxes[:, 4], image_inds, 0.7)
@@ -148,6 +152,10 @@ def detect_face(imgs, minsize, pnet, rnet, onet, threshold, factor, device):
         out0 = out[0].permute(1, 0)
         out1 = out[1].permute(1, 0)
         out2 = out[2].permute(1, 0)
+        out0 = out0.cpu()
+        out1 = out1.cpu()
+        out2 = out2.cpu()
+
         score = out2[1, :]
         points = out1
         ipass = score > threshold[2]
